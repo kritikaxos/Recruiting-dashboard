@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Talent Ops — NovaMind AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0f2040; --navy-mid: #1a3560; --navy-light: #f0f4fa;
+      --amber: #e8a838; --amber-light: #fdf5e0;
+      --green: #1a8a5c; --green-light: #e8f7f1;
+      --red: #c94040; --red-light: #fdf0f0;
+      --border: #e4e9f0; --bg: #f5f7fb; --white: #ffffff;
+      --text: #1a2535; --text-muted: #8494a7;
+    }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    header { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 36px; display: flex; align-items: center; justify-content: space-between; height: 62px; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(15,32,64,0.04); }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-mark { width: 34px; height: 34px; background: var(--navy); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .logo-mark svg { width: 17px; height: 17px; }
+    .logo-text-wrap { display: flex; flex-direction: column; line-height: 1.2; }
+    .logo-name { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: var(--navy); }
+    .logo-sub { font-size: 10.5px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.4px; text-transform: uppercase; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .sync-pill { display: flex; align-items: center; gap: 6px; background: var(--green-light); color: var(--green); font-size: 12px; font-weight: 500; padding: 5px 11px; border-radius: 20px; border: 1px solid #b8e8d4; }
+    .sync-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: blink 2.2s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+    .btn-refresh { background: var(--navy); color: var(--white); border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.15s, transform 0.1s; }
+    .btn-refresh:hover { background: var(--navy-mid); }
+    .btn-refresh:active { transform: scale(0.97); }
+    .last-synced { font-size: 12px; color: var(--text-muted); }
+    .container { max-width: 1300px; margin: 0 auto; padding: 32px 36px; }
+    .page-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 28px; }
+    .page-title h1 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+    .page-title p { font-size: 13.5px; color: var(--text-muted); }
+    .quarter-tag { background: var(--amber-light); color: #9a6b10; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 20px; border: 1px solid #f0d48a; }
+    .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 22px; }
+    .kpi-card { background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; opacity: 0; transform: translateY(10px); animation: fadeUp 0.45s ease forwards; }
+    .kpi-card:nth-child(1){animation-delay:.05s} .kpi-card:nth-child(2){animation-delay:.10s} .kpi-card:nth-child(3){animation-delay:.15s} .kpi-card:nth-child(4){animation-delay:.20s} .kpi-card:nth-child(5){animation-delay:.25s}
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+    .kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.7px; color: var(--text-muted); margin-bottom: 10px; }
+    .kpi-value { font-family: 'Playfair Display', serif; font-size: 34px; font-weight: 700; color: var(--navy); line-height: 1; margin-bottom: 10px; }
+    .kpi-value .unit { font-size: 16px; font-weight: 600; color: var(--text-muted); font-family: 'DM Sans', sans-serif; margin-left: 2px; }
+    .kpi-delta { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; padding: 3px 8px; border-radius: 20px; }
+    .kpi-delta.up { background: var(--green-light); color: var(--green); }
+    .kpi-delta.down { background: var(--red-light); color: var(--red); }
+    .kpi-delta.neutral { background: var(--amber-light); color: #9a6b10; }
+    .charts-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 18px; margin-bottom: 18px; }
+    .chart-card { background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 24px; opacity: 0; animation: fadeUp 0.45s ease 0.3s forwards; }
+    .chart-card.delay-1 { animation-delay: 0.35s; } .chart-card.delay-2 { animation-delay: 0.40s; }
+    .chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+    .chart-title { font-size: 14px; font-weight: 600; color: var(--navy); margin-bottom: 3px; }
+    .chart-sub { font-size: 12px; color: var(--text-muted); }
+    .chart-badge { font-size: 11px; font-weight: 600; background: var(--navy-light); color: var(--navy); padding: 4px 10px; border-radius: 20px; }
+    .chart-wrap { position: relative; }
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 18px; }
+
+    /* VISUAL FUNNEL */
+        .funnel-list { list-style: none; }
+    .funnel-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .funnel-item:last-child { border-bottom: none; }
+    .funnel-stage { font-size: 13px; font-weight: 500; color: var(--text); width: 160px; flex-shrink: 0; }
+    .funnel-bar-wrap { flex: 1; background: var(--bg); border-radius: 4px; height: 8px; overflow: hidden; }
+    .funnel-bar { height: 100%; border-radius: 4px; background: var(--navy); transition: width 0.8s ease; }
+    .funnel-count { font-size: 13px; font-weight: 600; color: var(--navy); width: 28px; text-align: right; flex-shrink: 0; }
+    .funnel-pct { font-size: 11px; color: var(--text-muted); width: 34px; text-align: right; flex-shrink: 0; }
+
+    .reqs-table { width: 100%; border-collapse: collapse; }
+    .reqs-table th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); text-align: left; padding: 0 0 10px 0; border-bottom: 1px solid var(--border); }
+    .reqs-table td { font-size: 13px; padding: 10px 0; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .reqs-table tr:last-child td { border-bottom: none; }
+    .stage-tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+    .stage-tag.hot { background: var(--red-light); color: var(--red); }
+    .stage-tag.active { background: var(--green-light); color: var(--green); }
+    .stage-tag.slow { background: var(--amber-light); color: #9a6b10; }
+    .days-open { font-weight: 600; color: var(--navy); }
+    .source-legend { margin-top: 8px; }
+    .legend-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); }
+    .legend-item:last-child { border-bottom: none; }
+    .legend-left { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .legend-pct { font-size: 13px; font-weight: 600; color: var(--navy); }
+    .setup-banner { background: var(--navy); color: var(--white); border-radius: 14px; padding: 18px 24px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; opacity: 0; animation: fadeUp 0.4s ease 0.1s forwards; }
+    .setup-banner-left { display: flex; align-items: center; gap: 12px; }
+    .setup-icon { width: 36px; height: 36px; background: rgba(232,168,56,0.18); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .setup-text strong { font-size: 13.5px; font-weight: 600; display: block; margin-bottom: 2px; }
+    .setup-text span { font-size: 12px; opacity: 0.65; }
+    .setup-code { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 14px; font-size: 12px; font-family: 'Courier New', monospace; color: var(--amber); white-space: nowrap; }
+    .dismiss-btn { background: transparent; border: 1px solid rgba(255,255,255,0.25); color: rgba(255,255,255,0.7); padding: 6px 14px; border-radius: 7px; font-size: 12px; font-family: 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+    .dismiss-btn:hover { background: rgba(255,255,255,0.08); color: white; }
+    @media (max-width: 1100px) { .kpi-row { grid-template-columns: repeat(3, 1fr); } .charts-grid { grid-template-columns: 1fr; } .bottom-grid { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#e8a838" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="logo-text-wrap">
+      <span class="logo-name">NovaMind AI</span>
+      <span class="logo-sub">Talent Operations</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="last-synced" id="lastSynced">Last synced: just now</span>
+    <div class="sync-pill"><div class="sync-dot"></div>Live from Sheets</div>
+    <button class="btn-refresh" onclick="refreshData()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      Refresh
+    </button>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="page-header">
+    <div class="page-title">
+      <h1>Recruiting Dashboard <span style="font-size:14px;font-weight:400;color:var(--text-muted);font-family:'DM Sans',sans-serif;">— Q1 2026</span></h1>
+      <p id="page-sub">Data refreshes from Google Sheets</p>
+    </div>
+    <span class="quarter-tag">Q1 2026 · Jan–Mar</span>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="kpi-label">Avg. Time to Hire</div><div class="kpi-value" id="kpi-tth">—<span class="unit">days</span></div></div>
+    <div class="kpi-card"><div class="kpi-label">Open Requisitions</div><div class="kpi-value" id="kpi-reqs">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Candidates Active</div><div class="kpi-value" id="kpi-active">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Offer Accept Rate</div><div class="kpi-value" id="kpi-oar">—<span class="unit">%</span></div></div>
+    <div class="kpi-card"><div class="kpi-label">Pipeline Conversion</div><div class="kpi-value" id="kpi-conv">—<span class="unit">%</span></div></div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card delay-1">
+      <div class="chart-header">
+        <div><div class="chart-title">Time to Hire by Role</div><div class="chart-sub">Days from application to offer accepted</div></div>
+        <span class="chart-badge">Q1 2026</span>
+      </div>
+      <div class="chart-wrap" style="height:220px;"><canvas id="timeToHireChart"></canvas></div>
+    </div>
+    <div class="chart-card delay-2">
+      <div class="chart-header">
+        <div><div class="chart-title">Candidate Source Mix</div><div class="chart-sub">Where hires are coming from</div></div>
+      </div>
+      <div class="chart-wrap" style="height:160px;"><canvas id="sourceChart"></canvas></div>
+      <div class="source-legend" id="sourceLegend"></div>
+    </div>
+  </div>
+
+  <div class="bottom-grid">
+    <div class="chart-card" style="animation-delay:0.45s;">
+      <div class="chart-header">
+        <div><div class="chart-title">Pipeline Funnel</div><div class="chart-sub">Active candidates by stage</div></div>
+      </div>
+      <ul class="funnel-list" id="funnelList"></ul>
+    </div>
+    <div class="chart-card" style="animation-delay:0.5s;">
+      <div class="chart-header">
+        <div><div class="chart-title">Hires by Source</div><div class="chart-sub">Converted candidates this quarter</div></div>
+      </div>
+      <div class="chart-wrap" style="height:210px;"><canvas id="hiresSourceChart"></canvas></div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.55s;">
+      <div class="chart-header">
+        <div><div class="chart-title">Open Requisitions</div><div class="chart-sub">Active roles & urgency</div></div>
+      </div>
+      <table class="reqs-table">
+        <thead><tr><th>Role</th><th>Dept</th><th>In Pipeline</th><th>Days Open</th><th>Status</th></tr></thead>
+        <tbody id="reqsTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SHEET_ID = "1PXP8-SZ07zLTGen53n8fXxz6gbD0GVY6abkRkDWKMM0";
+  const API_KEY  = "AIzaSyC4Y9zfoJ16QtDwy9N5TLXZIA5sbMFCYAQ";
+  const RANGE    = "Sheet1!A:L";
+  const USE_MOCK_DATA = false;
+
+  const mockData = {
+    kpis: { timeToHire: 24, openReqs: 12, activeCandidates: 47, offerAcceptRate: 83, pipelineConversion: 14 },
+    timeToHire: {
+      labels: ["ML Engineer", "Head of Sales", "Sr. Designer", "DevRel", "Data Analyst", "Growth PM"],
+      values: [31, 28, 22, 18, 15, 26]
+    },
+    sources: [
+      { label: "LinkedIn",           value: 38, color: "#0f2040" },
+      { label: "Referral",           value: 27, color: "#e8a838" },
+      { label: "Inbound",            value: 18, color: "#1a8a5c" },
+      { label: "Recruiter Outreach", value: 12, color: "#5b7fa6" },
+      { label: "Event/Conference",   value:  5, color: "#c94040" },
+    ],
+    funnel: [
+      { stage: "Applied",           count: 47, max: 47 },
+      { stage: "Recruiter Screen",  count: 44, max: 47 },
+      { stage: "HM Screen",         count: 27, max: 47 },
+      { stage: "Final Round",       count: 15, max: 47 },
+      { stage: "Offer Extended",    count:  6, max: 47 },
+      { stage: "Hired",             count:  3, max: 47 },
+    ],
+    hiresBySource: {
+      labels: ["LinkedIn", "Referral", "Inbound", "Outreach", "Event"],
+      values: [4, 6, 2, 1, 1]
+    },
+    openReqs: [
+      { role: "ML Engineer",   dept: "Eng",     days: 38, status: "hot"    },
+      { role: "Head of Sales", dept: "GTM",     days: 31, status: "hot"    },
+      { role: "Sr. Designer",  dept: "Product", days: 22, status: "active" },
+      { role: "DevRel Lead",   dept: "Eng",     days: 18, status: "active" },
+      { role: "Growth PM",     dept: "Product", days: 29, status: "slow"   },
+      { role: "Data Analyst",  dept: "Ops",     days: 14, status: "active" },
+    ]
+  };
+
+  // Navy -> teal -> green gradient down the funnel
+  function renderFunnel(funnel) {
+    const el = document.getElementById("funnelList");
+    const max = Math.max(...funnel.map(f => f.count)) || 1;
+    el.innerHTML = funnel.map(f => {
+      const pct = Math.round(f.count / max * 100);
+      return `<li class="funnel-item">
+        <span class="funnel-stage">${f.stage}</span>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${pct}%"></div></div>
+        <span class="funnel-count">${f.count}</span>
+      </li>`;
+    }).join("");
+  }
+
+  async function fetchSheetData() {
+    if (USE_MOCK_DATA) return mockData;
+    const url = "https://sheets.googleapis.com/v4/spreadsheets/" + SHEET_ID + "/values/" + RANGE + "?key=" + API_KEY;
+    const res = await fetch(url);
+    const json = await res.json();
+    const rows = json.values || []; const headers = rows[0];
+    const data = rows.slice(1).map(r => Object.fromEntries(headers.map((h,i) => [h, r[i]])));
+    const hired = data.filter(d => d.Stage === "Hired");
+    const active = data.filter(d => !["Hired","Rejected","Withdrawn"].includes(d.Stage));
+    const offered = data.filter(d => ["Offer Extended","Hired"].includes(d.Stage));
+    const avgDays = hired.length ? Math.round(hired.reduce((s,d) => s + (+d["Days to Hire"] || 0), 0) / hired.length) : 0;
+    const stageOrder = ["Applied","Recruiter Screen","HM Screen","Final Round","Offer Extended","Hired"];
+    const totalActive = data.filter(d => !["Rejected","Withdrawn"].includes(d.Stage)).length;
+    const funnelCounts = stageOrder.map(s => ({
+      stage: s,
+      count: data.filter(d => d.Stage === s).length,
+      max: totalActive
+    }));
+    const sourceMap = {};
+    const sourceColors = ["#0f2040","#e8a838","#1a8a5c","#5b7fa6","#c94040","#9b59b6"];
+    data.forEach(d => { if(d.Source) sourceMap[d.Source] = (sourceMap[d.Source]||0)+1; });
+    const sourceTotal = data.length || 1;
+    const sources = Object.entries(sourceMap).map(([label,count],i) => ({ label, value: Math.round(count/sourceTotal*100), color: sourceColors[i % sourceColors.length] }));
+    return {
+      kpis: { timeToHire: avgDays, openReqs: new Set(active.map(d => d.Role)).size, activeCandidates: active.length, offerAcceptRate: offered.length ? Math.round(hired.length/offered.length*100) : 0, pipelineConversion: data.length ? Math.round(hired.length/data.length*100) : 0 },
+      timeToHire: { labels: [...new Set(hired.map(d => d.Role))].slice(0,6), values: [...new Set(hired.map(d => d.Role))].slice(0,6).map(role => Math.round(hired.filter(d => d.Role===role).reduce((s,d) => s+(+d["Days to Hire"]||0),0) / Math.max(hired.filter(d => d.Role===role).length,1))) },
+      sources, funnel: funnelCounts,
+      hiresBySource: { labels: Object.keys(sourceMap), values: Object.values(sourceMap) },
+      openReqs: ((() => {
+      const active = data.filter(d => !["Hired","Rejected","Withdrawn"].includes(d.Stage));
+      const roleMap = {};
+      active.forEach(d => {
+        if (!roleMap[d.Role]) roleMap[d.Role] = { role: d.Role, dept: d.Dept, count: 0, maxDays: 0 };
+        roleMap[d.Role].count++;
+        const days = +d["Days Open"] || 0;
+        if (days > roleMap[d.Role].maxDays) roleMap[d.Role].maxDays = days;
+      });
+      return Object.values(roleMap).map(r => ({
+        role: r.role, dept: r.dept, count: r.count, days: r.maxDays,
+        status: r.maxDays > 30 ? "hot" : r.maxDays > 20 ? "slow" : "active"
+      }));
+    })())
+    };
+  }
+
+  let charts = {};
+  function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+  function renderAll(data) {
+    const k = data.kpis;
+    document.getElementById("page-sub").textContent = data.openReqs.length + " active roles · " + data.funnel.find(f => f.stage === "Hired").count + " hires this quarter · Data refreshes from Google Sheets";
+    document.getElementById("kpi-tth").innerHTML = k.timeToHire + '<span class="unit">days</span>';
+    document.getElementById("kpi-reqs").textContent = k.openReqs;
+    document.getElementById("kpi-active").textContent = k.activeCandidates;
+    document.getElementById("kpi-oar").innerHTML = k.offerAcceptRate + '<span class="unit">%</span>';
+    document.getElementById("kpi-conv").innerHTML = k.pipelineConversion + '<span class="unit">%</span>';
+
+    renderFunnel(data.funnel);
+
+    document.getElementById("reqsTableBody").innerHTML = data.openReqs.map(r =>
+      "<tr><td style=\"font-weight:500\">" + r.role + "</td><td style=\"color:var(--text-muted)\">" + r.dept + "</td><td style=\"font-weight:600;color:var(--navy)\">" + r.count + "</td><td><span style=\"font-weight:600;color:var(--navy)\">" + r.days + "</span> <span style=\"color:var(--text-muted);font-size:12px\">days</span></td><td><span class=\"stage-tag " + r.status + "\">" + (r.status === "hot" ? "🔴 Urgent" : r.status === "slow" ? "🟡 Slow" : "🟢 On Track") + "</span></td></tr>"
+    ).join("");
+
+    document.getElementById("sourceLegend").innerHTML = data.sources.map(s =>
+      "<div class=\"legend-item\"><div class=\"legend-left\"><div class=\"legend-dot\" style=\"background:" + s.color + "\"></div>" + s.label + "</div><span class=\"legend-pct\">" + s.value + "%</span></div>"
+    ).join("");
+
+    destroyChart("timeToHire");
+    charts["timeToHire"] = new Chart(document.getElementById("timeToHireChart").getContext("2d"), {
+      type: "bar",
+      data: { labels: data.timeToHire.labels, datasets: [{ data: data.timeToHire.values, backgroundColor: data.timeToHire.values.map(v => v > 28 ? "#c94040" : v > 20 ? "#e8a838" : "#1a8a5c"), borderRadius: 6, borderSkipped: false }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => " " + ctx.raw + " days" } } }, scales: { x: { grid: { display: false }, ticks: { font: { family: "DM Sans", size: 12 }, color: "#8494a7" } }, y: { grid: { color: "#f0f2f5" }, ticks: { font: { family: "DM Sans", size: 11 }, color: "#8494a7", callback: v => v + "d" }, beginAtZero: true } } }
+    });
+
+    destroyChart("source");
+    charts["source"] = new Chart(document.getElementById("sourceChart").getContext("2d"), {
+      type: "doughnut",
+      data: { labels: data.sources.map(s => s.label), datasets: [{ data: data.sources.map(s => s.value), backgroundColor: data.sources.map(s => s.color), borderWidth: 2, borderColor: "#fff", hoverOffset: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => " " + ctx.label + ": " + ctx.raw + "%" } } } }
+    });
+
+    destroyChart("hiresSource");
+    charts["hiresSource"] = new Chart(document.getElementById("hiresSourceChart").getContext("2d"), {
+      type: "bar",
+      data: { labels: data.hiresBySource.labels, datasets: [{ data: data.hiresBySource.values, backgroundColor: "#0f2040", borderRadius: 6, borderSkipped: false }] },
+      options: { responsive: true, maintainAspectRatio: false, indexAxis: "y", plugins: { legend: { display: false } }, scales: { x: { grid: { color: "#f0f2f5" }, ticks: { font: { family: "DM Sans", size: 11 }, color: "#8494a7", stepSize: 1 }, beginAtZero: true }, y: { grid: { display: false }, ticks: { font: { family: "DM Sans", size: 12 }, color: "#8494a7" } } } }
+    });
+  }
+
+  async function refreshData() {
+    const btn = document.querySelector(".btn-refresh");
+    btn.style.opacity = "0.6"; btn.style.pointerEvents = "none";
+    try {
+      const data = await fetchSheetData();
+      renderAll(data);
+      document.getElementById("lastSynced").textContent = "Last synced: " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    } catch (e) {
+      console.error("Failed to fetch sheet data:", e);
+    } finally {
+      btn.style.opacity = "1"; btn.style.pointerEvents = "auto";
+    }
+  }
+
+  setInterval(refreshData, 60000);
+  refreshData();
+</script>
+</body>
+</html>
